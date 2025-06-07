@@ -21,10 +21,10 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 # ---------- DATABASE CONFIG ----------
 db_config = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'user': os.getenv('DB_USER', 'postgres'),
+    'host': os.getenv('DB_HOST', 'dpg-d11vbh49c44c73foqnn0-a'),
+    'user': os.getenv('DB_USER', 'pothole_db_qx88_user'),
     'password': os.getenv('DB_PASSWORD', ''),
-    'dbname': os.getenv('DB_NAME', 'pothole_db'),
+    'dbname': os.getenv('DB_NAME', 'pothole_db_qx88'),
     'port': int(os.getenv('DB_PORT', 5432))
 }
 
@@ -306,4 +306,5 @@ def submit_complaint():
 if __name__ == '__main__':
     init_db()
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
