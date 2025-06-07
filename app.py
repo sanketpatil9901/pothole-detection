@@ -60,7 +60,7 @@ def init_db():
                 id SERIAL PRIMARY KEY,
                 latitude DOUBLE PRECISION NOT NULL,
                 longitude DOUBLE PRECISION NOT NULL,
-                image_path TEXT NOT NULL,
+                image BYTEA,  -- Changed from image_path TEXT
                 count INTEGER DEFAULT 1,
                 details JSONB,
                 description TEXT,
@@ -253,18 +253,22 @@ def upload_file():
         if not lat or not lon:
             flash('Please select a location on the map.', 'error')
             return redirect(url_for('index'))
+        # Read image as binary
+        image_data = file.read()
+        # You may still want to save the file to disk for processing
         ext = file.filename.rsplit('.', 1)[1].lower()
         unique_filename = f"{str(uuid.uuid4())}_{int(time.time())}.{ext}"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-        file.save(filepath)
+        with open(filepath, 'wb') as f:
+            f.write(image_data)
         count, details, output_path = imageDetector.detectPotholeonImage(filepath, (float(lat), float(lon)))
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO potholes (latitude, longitude, image_path, count, details, description)
+                INSERT INTO potholes (latitude, longitude, image, count, details, description)
                 VALUES (%s, %s, %s, %s, %s, %s)
-            """, (lat, lon, output_path, count, json.dumps(details), description))
+            """, (lat, lon, psycopg2.Binary(image_data), count, json.dumps(details), description))
             conn.commit()
             conn.close()
         except Exception as e:
@@ -302,6 +306,18 @@ def submit_complaint():
     except Exception as e:
         flash('Error submitting complaint: ' + str(e), 'error')
     return redirect(url_for('user_dashboard'))
+
+@app.route('/pothole_image/<int:pothole_id>')
+def pothole_image(pothole_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT image FROM potholes WHERE id = %s", (pothole_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row and row[0]:
+        return app.response_class(row[0], mimetype='image/jpeg')
+    else:
+        return '', 404
 
 if __name__ == '__main__':
     init_db()
