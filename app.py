@@ -1,15 +1,15 @@
-from flask import Flask, request, render_template, redirect, url_for, session, flash
+from flask import Flask, request, render_template, redirect, url_for, session, flash, jsonify
 from werkzeug.utils import secure_filename
 import os
-import mysql.connector
-import imageDetector
-from datetime import timedelta
-import math
-from flask import jsonify
 import uuid
 import time
 import json
 import ast
+import math
+import psycopg2
+import psycopg2.extras
+from datetime import timedelta
+import imageDetector
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -21,17 +21,67 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 # ---------- DATABASE CONFIG ----------
 db_config = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': 'Sanket@1234',
-    'database': 'pothole_db'
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'user': os.getenv('DB_USER', 'postgres'),
+    'password': os.getenv('DB_PASSWORD', ''),
+    'dbname': os.getenv('DB_NAME', 'pothole_db'),
+    'port': int(os.getenv('DB_PORT', 5432))
 }
 
 def get_db_connection():
-    return mysql.connector.connect(**db_config)
+    return psycopg2.connect(**db_config, cursor_factory=psycopg2.extras.RealDictCursor)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def init_db():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
+                password VARCHAR(100) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS admins (
+                id SERIAL PRIMARY KEY,
+                username VARCHAR(100) UNIQUE NOT NULL,
+                password VARCHAR(100) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS potholes (
+                id SERIAL PRIMARY KEY,
+                latitude DOUBLE PRECISION NOT NULL,
+                longitude DOUBLE PRECISION NOT NULL,
+                image_path TEXT NOT NULL,
+                count INTEGER DEFAULT 1,
+                details JSONB,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS complaints (
+                id SERIAL PRIMARY KEY,
+                user_name VARCHAR(100),
+                user_email VARCHAR(100),
+                message TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        conn.commit()
+        conn.close()
+        print("✅ Tables created successfully.")
+    except Exception as e:
+        print("❌ Error creating tables:", e)
+
 
 # ---------- ROUTES ----------
 
@@ -40,7 +90,7 @@ def index():
     if session.get('admin_logged_in'):
         try:
             conn = get_db_connection()
-            cursor = conn.cursor(dictionary=True)
+            cursor = conn.cursor()
             cursor.execute("SELECT * FROM potholes ORDER BY id DESC")
             pothole_history = cursor.fetchall()
             cursor.execute("SELECT name, email, created_at FROM users ORDER BY id DESC")
@@ -49,10 +99,8 @@ def index():
             complaints = cursor.fetchall()
             conn.close()
         except Exception as e:
-            print("Database error:", e)
             flash("Database error: " + str(e), "error")
             return redirect(url_for('login'))
-        import json, ast
         for p in pothole_history:
             try:
                 p['details_parsed'] = json.loads(p['details'])
@@ -61,18 +109,12 @@ def index():
                     p['details_parsed'] = ast.literal_eval(p['details'])
                 except Exception:
                     p['details_parsed'] = []
-        return render_template(
-            'admin_dashboard.html',
-            pothole_history=pothole_history,
-            users=users,
-            complaints=complaints
-        )
+        return render_template('admin_dashboard.html', pothole_history=pothole_history, users=users, complaints=complaints)
     elif session.get('user_logged_in'):
         return redirect(url_for('user_dashboard'))
     return redirect(url_for('login'))
 
 def haversine(lat1, lon1, lat2, lon2):
-    # Radius of Earth in meters
     R = 6371000
     phi1 = math.radians(float(lat1))
     phi2 = math.radians(float(lat2))
@@ -85,9 +127,7 @@ def haversine(lat1, lon1, lat2, lon2):
 @app.route('/user-dashboard')
 def user_dashboard():
     if session.get('user_logged_in'):
-        user_name = session.get('user_name')
-        user_email = session.get('user_email')
-        return render_template('user_dashboard.html', user_name=user_name, user_email=user_email)
+        return render_template('user_dashboard.html', user_name=session.get('user_name'), user_email=session.get('user_email'))
     return redirect(url_for('login'))
 
 @app.route('/api/potholes_nearby')
@@ -96,13 +136,11 @@ def potholes_nearby():
     lon = request.args.get('lon', type=float)
     if lat is None or lon is None:
         return jsonify([])
-
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
     cursor.execute("SELECT * FROM potholes")
     potholes = cursor.fetchall()
     conn.close()
-
     result = []
     for p in potholes:
         distance = haversine(lat, lon, p['latitude'], p['longitude'])
@@ -114,7 +152,6 @@ def potholes_nearby():
                 'description': f"Pothole (confidence: {p.get('count', 1)})",
                 'distance_meters': distance
             })
-    # Sort by distance
     result.sort(key=lambda x: x['distance_meters'])
     return jsonify(result)
 
@@ -122,58 +159,45 @@ def potholes_nearby():
 def login():
     if request.method == 'POST':
         login_type = request.form.get('login_type')
-
-        # User login
         if login_type == 'user':
             email = request.form.get('email')
             password = request.form.get('password')
-
             try:
                 conn = get_db_connection()
-                cursor = conn.cursor(dictionary=True)
+                cursor = conn.cursor()
                 cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
                 user = cursor.fetchone()
                 conn.close()
             except Exception as e:
                 flash("Database error: " + str(e), "error")
                 return redirect(url_for('login'))
-
             if user and user['password'] == password:
-                session['user_logged_in'] = True
-                session['user_email'] = user['email']
-                session['user_name'] = user['name']
+                session.update({'user_logged_in': True, 'user_email': user['email'], 'user_name': user['name']})
                 session.permanent = True
                 flash('Logged in successfully as user.', 'success')
                 return redirect(url_for('user_dashboard'))
             else:
-                flash('User not found or invalid password. Please register.', 'error')
+                flash('Invalid user credentials.', 'error')
                 return redirect(url_for('register'))
-
-        # Admin login
         elif login_type == 'admin':
             username = request.form.get('username')
             password = request.form.get('password')
-
             try:
                 conn = get_db_connection()
-                cursor = conn.cursor(dictionary=True)
+                cursor = conn.cursor()
                 cursor.execute("SELECT * FROM admins WHERE username = %s", (username,))
                 admin = cursor.fetchone()
                 conn.close()
             except Exception as e:
                 flash("Database error: " + str(e), "error")
                 return redirect(url_for('login'))
-
             if admin and admin['password'] == password:
-                session['admin_logged_in'] = True
-                session['admin_username'] = admin['username']
+                session.update({'admin_logged_in': True, 'admin_username': admin['username']})
                 session.permanent = True
                 flash('Logged in successfully as admin.', 'success')
                 return redirect(url_for('index'))
             else:
-                flash('Invalid admin username or password.', 'error')
-                return redirect(url_for('login'))
-
+                flash('Invalid admin credentials.', 'error')
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -183,38 +207,28 @@ def register():
         email = request.form.get('email')
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
-
         if not name or not email or not password or not confirm_password:
             flash('Please fill all the fields.', 'error')
             return redirect(url_for('register'))
         if password != confirm_password:
             flash('Passwords do not match.', 'error')
             return redirect(url_for('register'))
-
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
-            existing_user = cursor.fetchone()
-
-            if existing_user:
+            if cursor.fetchone():
                 flash('User already exists with this email.', 'error')
                 conn.close()
                 return redirect(url_for('register'))
-
-            cursor.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s)",
-                           (name, email, password))
+            cursor.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s)", (name, email, password))
             conn.commit()
             conn.close()
-
             flash('Registration successful! Please login.', 'success')
             return redirect(url_for('login'))
-
         except Exception as e:
-            print("Database error:", e)
             flash("Database error: " + str(e), 'error')
             return redirect(url_for('register'))
-
     return render_template('register.html')
 
 @app.route('/logout')
@@ -228,57 +242,38 @@ def upload_file():
     if not session.get('admin_logged_in'):
         flash('Please login as admin to upload.', 'error')
         return redirect(url_for('login'))
-
     if request.method == 'POST':
         file = request.files.get('file')
         description = request.form.get('description')
         lat = request.form.get('latitude')
         lon = request.form.get('longitude')
-
         if not file or file.filename == '' or not allowed_file(file.filename):
             flash('Invalid or missing file.', 'error')
             return redirect(url_for('index'))
         if not lat or not lon:
             flash('Please select a location on the map.', 'error')
             return redirect(url_for('index'))
-
         ext = file.filename.rsplit('.', 1)[1].lower()
         unique_filename = f"{str(uuid.uuid4())}_{int(time.time())}.{ext}"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
         file.save(filepath)
-
-        # Detect potholes and get details
         count, details, output_path = imageDetector.detectPotholeonImage(filepath, (float(lat), float(lon)))
-
-        # Store pothole details in the database
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
-            print("Details:", details)
-            cursor.execute(
-                "INSERT INTO potholes (latitude, longitude, image_path, count, details, description) VALUES (%s, %s, %s, %s, %s, %s)",
-                (
-                    lat,
-                    lon,
-                    output_path,
-                    count,
-                    json.dumps(details),
-                    description
-                )
-            )
+            cursor.execute("""
+                INSERT INTO potholes (latitude, longitude, image_path, count, details, description)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (lat, lon, output_path, count, json.dumps(details), description))
             conn.commit()
             conn.close()
         except Exception as e:
-            print("Database error:", e)
             flash("Database error: " + str(e), 'error')
             return redirect(url_for('index'))
-
         flash('Pothole uploaded successfully!', 'success')
-        return redirect(url_for('index'))  # Redirect to dashboard
-
-    # GET request: fetch pothole history for the table
+        return redirect(url_for('index'))
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
     cursor.execute("SELECT * FROM potholes ORDER BY id DESC")
     pothole_history = cursor.fetchall()
     conn.close()
@@ -297,10 +292,10 @@ def submit_complaint():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO complaints (user_name, user_email, message) VALUES (%s, %s, %s)",
-            (name, email, message)
-        )
+        cursor.execute("""
+            INSERT INTO complaints (user_name, user_email, message)
+            VALUES (%s, %s, %s)
+        """, (name, email, message))
         conn.commit()
         conn.close()
         flash('Complaint submitted successfully!', 'success')
@@ -308,7 +303,7 @@ def submit_complaint():
         flash('Error submitting complaint: ' + str(e), 'error')
     return redirect(url_for('user_dashboard'))
 
-# Create uploads folder and run app
 if __name__ == '__main__':
+    init_db()
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     app.run(debug=True)
