@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>User Dashboard - Nearby Potholes</title>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #2d3e50;
+      padding: 15px 30px;
+      color: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .navbar h1 {
+      font-size: 20px;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .navbar nav a {
+      margin-left: 20px;
+      color: #f1f1f1;
+      text-decoration: none;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .navbar nav a:hover {
+      color: #ffd369;
+    }
+
+    #container {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      height: calc(100vh - 60px);
+    }
+
+    #map {
+      height: 100%;
+    }
+
+    #sidebar {
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      background: white;
+      border-left: 1px solid #ddd;
+      padding: 20px;
+    }
+
+    #loading {
+      position: absolute;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ffffff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: bold;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      z-index: 999;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    .section-content {
+      display: none;
+    }
+
+    .section-content.active {
+      display: block;
+    }
+
+    #pothole-list .pothole-item {
+      display: flex;
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .pothole-item img {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-right: 12px;
+    }
+
+    .pothole-details {
+      font-size: 14px;
+      color: #333;
+    }
+
+    form input, form textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    form button {
+      background: #007bff;
+      color: white;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    form button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="navbar">
+    <h1>User Dashboard</h1>
+    <nav>
+      <a onclick="scrollToSection('profile')">Profile</a>
+      <a onclick="scrollToSection('potholes')">Nearby Potholes</a>
+      <a onclick="scrollToSection('complaints')">Complaints</a>
+      <a href="/logout">Logout</a>
+    </nav>
+  </div>
+
+  <div id="loading">Locating you, please wait…</div>
+
+  <div id="container">
+    <div id="map"></div>
+    <div id="sidebar">
+
+      <!-- Profile Section -->
+      <div class="section section-content" id="profile">
+        <h3>Your Profile</h3>
+        <p><strong>Name:</strong> <span id="user-name">{{ user_name }}</span></p>
+        <p><strong>Email:</strong> <span id="user-email">{{ user_email }}</span></p>
+      </div>
+
+      <!-- Pothole List -->
+      <div class="section section-content" id="potholes">
+        <h3>Nearby Potholes</h3>
+        <div id="pothole-list"></div>
+      </div>
+
+      <!-- Complaint Form -->
+      <div class="section section-content" id="complaints">
+        <h3>Submit a Complaint</h3>
+        <form id="complaint-form" method="POST" action="/submit_complaint">
+          <input type="text" name="name" id="complainant-name" placeholder="Your Name" required>
+          <input type="email" name="email" id="complainant-email" placeholder="Your Email" required>
+          <textarea name="message" rows="4" placeholder="Your complaint..." required></textarea>
+          <button type="submit">Submit Complaint</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+  <script>
+    const map = L.map('map');
+    const cluster = L.markerClusterGroup();
+    map.addLayer(cluster);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const potholeIcon = L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+      iconSize: [30, 30]
+    });
+
+    // Voice alert function
+    function speak(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 1;
+        window.speechSynthesis.speak(utter);
+      }
+    }
+
+    function onLocationFound(e) {
+      document.getElementById('loading').style.display = 'none';
+      const userLatLng = e.latlng;
+      map.setView(userLatLng, 15);
+
+      L.marker(userLatLng).addTo(map).bindPopup("You are here").openPopup();
+
+      fetch(`/api/potholes_nearby?lat=${userLatLng.lat}&lon=${userLatLng.lng}`)
+        .then(res => res.json())
+        .then(data => {
+          const list = document.getElementById('pothole-list');
+          list.innerHTML = '';
+          if (data.length > 0) {
+            speak(`Warning! ${data.length} pothole${data.length > 1 ? 's are' : ' is'} nearby.`);
+            notifyUser(`Warning! ${data.length} pothole${data.length > 1 ? 's are' : ' is'} nearby.`);
+          }
+          data.forEach(p => {
+            const marker = L.marker([p.latitude, p.longitude], { icon: potholeIcon })
+              .bindPopup(`<strong>${p.description}</strong><br/><img src="${p.image_path}" width="100"><br/><b>Distance:</b> ${p.distance_meters.toFixed(1)} m`);
+            cluster.addLayer(marker);
+
+            const polyline = L.polyline([userLatLng, [p.latitude, p.longitude]], {
+              color: '#ff4d4f', weight: 3, dashArray: '6, 6'
+            }).addTo(map);
+
+            const midLat = (userLatLng.lat + p.latitude) / 2;
+            const midLng = (userLatLng.lng + p.longitude) / 2;
+            L.marker([midLat, midLng], {
+              icon: L.divIcon({
+                className: '',
+                html: `<div style="background: #007bff; color: white; padding: 4px 12px; border-radius: 14px; font-size: 13px; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">${p.distance_meters.toFixed(1)} m</div>`,
+                iconSize: [80, 24], iconAnchor: [40, 12]
+              })
+            }).addTo(map);
+
+            list.innerHTML += `
+              <div class="pothole-item">
+                <img src="${p.image_path}" alt="Pothole Image">
+                <div class="pothole-details">
+                  <strong>${p.description}</strong><br/>
+                  ${p.distance_meters.toFixed(1)} meters away
+                </div>
+              </div>`;
+          });
+        });
+    }
+
+    function onLocationError(e) {
+      document.getElementById('loading').innerText = "Location error: " + e.message;
+    }
+
+    map.on('locationfound', onLocationFound);
+    map.on('locationerror', onLocationError);
+
+    map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true, timeout: 10000 });
+
+    // Toggle section visibility
+    function scrollToSection(id) {
+      const sections = document.querySelectorAll(".section-content");
+      sections.forEach(sec => sec.classList.remove("active"));
+
+      const target = document.getElementById(id);
+      if (target) {
+        target.classList.add("active");
+      }
+    }
+
+    // Request notification permission on page load
+    if ('Notification' in window && Notification.permission !== 'granted') {
+      Notification.requestPermission();
+    }
+
+    function notifyUser(message) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Pothole Alert', { body: message });
+      }
+    }
+
+    // Initialize page with profile visible and autofill complaint form
+    window.onload = () => {
+      document.getElementById("complainant-name").value = document.getElementById("user-name").textContent;
+      document.getElementById("complainant-email").value = document.getElementById("user-email").textContent;
+      scrollToSection('profile');
+    };
+  </script>
+</body>
+</html>

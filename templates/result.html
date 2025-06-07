@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Detection Result</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css"/>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #eef2f5;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 30px;
+    }
+
+    .content {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 30px;
+      justify-content: center;
+    }
+
+    .image-container,
+    .map-container {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    .image-container img {
+      max-width: 100%;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .map-container #map {
+      height: 400px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 30px;
+    }
+
+    li {
+      background-color: #f9f9f9;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    li strong {
+      color: #333;
+    }
+
+    .distance-label {
+      background: #007bff;
+      color: white;
+      padding: 5px 12px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      border: 2px solid #fff;
+      text-align: center;
+    }
+
+    .leaflet-container:fullscreen {
+      z-index: 9999;
+    }
+
+    @media (max-width: 768px) {
+      .content {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>Detected Potholes: {{ count }}</h2>
+
+    <div class="content">
+      <div class="image-container">
+        <img src="{{ file_path }}" alt="Detection Result">
+      </div>
+      <div class="map-container">
+        <div id="map"></div>
+      </div>
+    </div>
+
+    <ul>
+      {% for d in details %}
+      <li>
+        <strong>Confidence:</strong> {{ d.confidence }}%<br>
+        <strong>Position:</strong> {{ d.position }}<br>
+        <strong>Size:</strong> {{ d.size }}<br>
+        <strong>GPS:</strong> {{ d.gps }}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <!-- Leaflet core -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Fullscreen plugin -->
+  <script src="https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js"></script>
+
+  <script>
+    const potholes = {{ details | tojson }};
+    const map = L.map('map', {
+      fullscreenControl: true
+    }).setView([potholes[0].gps[0], potholes[0].gps[1]], 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    potholes.forEach((d, i) => {
+      L.marker([d.gps[0], d.gps[1]]).addTo(map)
+        .bindPopup(`<b>Pothole ${i + 1}</b><br>Confidence: ${d.confidence}%<br>Size: ${d.size}`);
+    });
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(position => {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+
+        const userLatLng = L.latLng(userLat, userLng);
+        const userMarker = L.marker(userLatLng, {
+          icon: L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/64/64113.png',
+            iconSize: [30, 30]
+          })
+        }).addTo(map).bindPopup("<b>Your Location</b>").openPopup();
+
+        potholes.forEach((d) => {
+          const potholeLatLng = L.latLng(d.gps[0], d.gps[1]);
+          const distanceMeters = userLatLng.distanceTo(potholeLatLng);
+          const distanceKm = (distanceMeters / 1000).toFixed(2);
+
+          const polyline = L.polyline([userLatLng, potholeLatLng], {
+            color: '#ff4d4f',
+            weight: 3,
+            dashArray: '5, 10'
+          }).addTo(map);
+
+          const midLat = (userLat + d.gps[0]) / 2;
+          const midLng = (userLng + d.gps[1]) / 2;
+
+          L.marker([midLat, midLng], {
+            icon: L.divIcon({
+              className: '',
+              html: `<div class="distance-label">${distanceKm} km</div>`,
+              iconSize: [100, 30],
+              iconAnchor: [50, 15]
+            })
+          }).addTo(map);
+        });
+      }, () => alert("Unable to access your location."));
+    } else {
+      alert("Geolocation is not supported by your browser.");
+    }
+  </script>
+</body>
+</html>

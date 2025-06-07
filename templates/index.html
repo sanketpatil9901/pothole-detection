@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pothole Detection Upload</title>
+</head>
+<body>
+
+<div class="container">
+  <h2>Upload Image or Video</h2>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form action="/upload" method="post" enctype="multipart/form-data" onsubmit="return handleSubmit()">
+    <label for="file" class="upload-area" id="upload-area">
+      Click or Drag & Drop your file here
+      <input type="file" name="file" id="file" accept="image/*,video/*" required>
+    </label>
+
+    <div class="file-name" id="file-name"></div>
+
+    <button type="submit" class="btn" id="uploadBtn">Upload</button>
+    <div id="loading">Uploading, please wait...</div>
+
+    <div class="preview" id="preview">
+      <img id="img-preview" style="display:none;" />
+      <video id="video-preview" controls style="display:none;"></video>
+    </div>
+  </form>
+</div>
+
+<script>
+  const fileInput = document.getElementById("file");
+  const fileNameDisplay = document.getElementById("file-name");
+  const imgPreview = document.getElementById("img-preview");
+  const videoPreview = document.getElementById("video-preview");
+  const uploadArea = document.getElementById("upload-area");
+
+  uploadArea.addEventListener('click', () => fileInput.click());
+
+  uploadArea.addEventListener("dragover", function (e) {
+    e.preventDefault();
+    uploadArea.style.borderColor = "#4a90e2";
+  });
+
+  uploadArea.addEventListener("dragleave", function () {
+    uploadArea.style.borderColor = "#aaa";
+  });
+
+  uploadArea.addEventListener("drop", function (e) {
+    e.preventDefault();
+    uploadArea.style.borderColor = "#28a745";
+
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    fileInput.files = dataTransfer.files;
+
+    showPreview(file);
+  });
+
+  fileInput.addEventListener("change", function () {
+    if (fileInput.files[0]) {
+      showPreview(fileInput.files[0]);
+    }
+  });
+
+  function showPreview(file) {
+    const url = URL.createObjectURL(file);
+    fileNameDisplay.textContent = file.name;
+
+    if (file.type.startsWith("image/")) {
+      imgPreview.src = url;
+      imgPreview.style.display = "block";
+      videoPreview.style.display = "none";
+    } else if (file.type.startsWith("video/")) {
+      videoPreview.src = url;
+      videoPreview.style.display = "block";
+      imgPreview.style.display = "none";
+    } else {
+      imgPreview.style.display = "none";
+      videoPreview.style.display = "none";
+    }
+  }
+
+  function handleSubmit() {
+    document.getElementById('uploadBtn').disabled = true;
+    document.getElementById('loading').style.display = 'block';
+    return true;
+  }
+</script>
+
+</body>
+</html>

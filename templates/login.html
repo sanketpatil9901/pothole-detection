@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Login - Pothole Detection</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0; padding: 0;
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #4a90e2, #50c878);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+  .container {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    width: 380px;
+    max-width: 90vw;
+    padding: 30px 25px;
+  }
+  h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-weight: 600;
+    color: #2c3e50;
+  }
+  .tab-buttons {
+    display: flex;
+    margin-bottom: 25px;
+  }
+  .tab-buttons button {
+    flex: 1;
+    background: #e7e7e7;
+    border: none;
+    padding: 12px 0;
+    font-weight: 600;
+    cursor: pointer;
+    color: #555;
+    border-radius: 8px 8px 0 0;
+    transition: background 0.3s;
+  }
+  .tab-buttons button.active {
+    background: #4a90e2;
+    color: white;
+    box-shadow: 0 4px 10px rgba(74, 144, 226, 0.5);
+  }
+  form {
+    display: none;
+    flex-direction: column;
+  }
+  form.active {
+    display: flex;
+  }
+  label {
+    margin-bottom: 6px;
+    color: #333;
+    font-weight: 600;
+  }
+  input[type="text"],
+  input[type="password"],
+  input[type="email"] {
+    padding: 10px 12px;
+    margin-bottom: 18px;
+    border-radius: 6px;
+    border: 1.8px solid #ccc;
+    font-size: 15px;
+    transition: border-color 0.3s;
+  }
+  input[type="text"]:focus,
+  input[type="password"]:focus,
+  input[type="email"]:focus {
+    outline: none;
+    border-color: #4a90e2;
+  }
+  button.submit-btn {
+    background: #4a90e2;
+    color: white;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 0;
+    cursor: pointer;
+    font-size: 16px;
+    box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4);
+    transition: background 0.3s;
+  }
+  button.submit-btn:hover {
+    background: #3b7ac8;
+  }
+  .switch-to-register {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 14px;
+    color: #4a90e2;
+    cursor: pointer;
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Login to Your Account</h2>
+  <div class="tab-buttons">
+    <button id="userTab" class="active">User Login</button>
+    <button id="adminTab">Admin Login</button>
+  </div>
+
+  <!-- User Login Form -->
+<!-- User Login Form -->
+<form id="userLoginForm" class="active" method="POST" action="/login">
+  <input type="hidden" name="login_type" value="user" />
+  <label for="userEmail">Email</label>
+  <input type="email" id="userEmail" name="email" placeholder="user@example.com" required />
+  
+  <label for="userPassword">Password</label>
+  <input type="password" id="userPassword" name="password" placeholder="Your password" required />
+  
+  <button type="submit" class="submit-btn">Login as User</button>
+  <div class="switch-to-register" onclick="window.location.href='/register'">Don't have an account? Register here</div>
+</form>
+
+<!-- Admin Login Form -->
+<form id="adminLoginForm" method="POST" action="/login">
+  <input type="hidden" name="login_type" value="admin" />
+  <label for="adminUsername">Username</label> 
+  <input type="text" id="adminUsername" name="username" placeholder="Admin username" required />
+  
+  <label for="adminPassword">Password</label>
+  <input type="password" id="adminPassword" name="password" placeholder="Your password" required />
+  
+  <button type="submit" class="submit-btn">Login as Admin</button>
+</form>
+
+</div>
+
+<script>
+  const userTab = document.getElementById('userTab');
+  const adminTab = document.getElementById('adminTab');
+  const userForm = document.getElementById('userLoginForm');
+  const adminForm = document.getElementById('adminLoginForm');
+
+  userTab.addEventListener('click', () => {
+    userTab.classList.add('active');
+    adminTab.classList.remove('active');
+    userForm.classList.add('active');
+    adminForm.classList.remove('active');
+  });
+
+  adminTab.addEventListener('click', () => {
+    adminTab.classList.add('active');
+    userTab.classList.remove('active');
+    adminForm.classList.add('active');
+    userForm.classList.remove('active');
+  });
+</script>
+
+</body>
+</html>

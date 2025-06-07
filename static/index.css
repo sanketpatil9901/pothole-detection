@@ -1,0 +1,119 @@
+   * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #eef2f5;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+ 
+    .container {
+      margin-top: 40px;
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      width: 100%;
+      max-width: 500px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .flash {
+      margin-bottom: 20px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .flash.error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .upload-area {
+      border: 2px dashed #aaa;
+      padding: 40px;
+      border-radius: 10px;
+      background-color: #f9f9f9;
+      width: 100%;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.3s ease;
+    }
+
+    .upload-area:hover {
+      border-color: #4a90e2;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .btn {
+      margin-top: 20px;
+      padding: 10px 24px;
+      background-color: #4a90e2;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .btn:hover {
+      background-color: #3b7ac8;
+    }
+
+    .btn:disabled {
+      background-color: #a0a0a0;
+      cursor: not-allowed;
+    }
+
+    .file-name {
+      margin-top: 10px;
+      color: #666;
+    }
+
+    .preview {
+      margin-top: 25px;
+      text-align: center;
+    }
+
+    .preview img,
+    .preview video {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    #loading {
+      display: none;
+      margin-top: 15px;
+      font-size: 14px;
+      color: #4a90e2;
+    }
+
+    @media (max-width: 600px) {
+      .upload-area {
+        padding: 20px;
+      }
+    }

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>User Registration - Pothole Detection</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+  body {
+    margin: 0; padding: 0;
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #50c878, #4a90e2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+  .container {
+    background: #fff;
+    border-radius: 14px;
+    padding: 30px 25px;
+    width: 380px;
+    max-width: 90vw;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  }
+  h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    font-weight: 600;
+    color: #2c3e50;
+  }
+  form {
+    display: flex;
+    flex-direction: column;
+  }
+  label {
+    margin-bottom: 6px;
+    color: #333;
+    font-weight: 600;
+  }
+  input[type="text"],
+  input[type="email"],
+  input[type="password"] {
+    padding: 10px 12px;
+    margin-bottom: 20px;
+    border-radius: 7px;
+    border: 1.8px solid #ccc;
+    font-size: 15px;
+    transition: border-color 0.3s;
+  }
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus {
+    outline: none;
+    border-color: #4a90e2;
+  }
+  button.submit-btn {
+    background: #4a90e2;
+    color: white;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 0;
+    cursor: pointer;
+    font-size: 16px;
+    box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4);
+    transition: background 0.3s;
+  }
+  button.submit-btn:hover {
+    background: #3b7ac8;
+  }
+  .switch-to-login {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 14px;
+    color: #4a90e2;
+    cursor: pointer;
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Create User Account</h2>
+  <form method="POST" action="/register">
+    <label for="name">Full Name</label>
+    <input type="text" id="name" name="name" placeholder="Your full name" required />
+    
+    <label for="email">Email Address</label>
+    <input type="email" id="email" name="email" placeholder="your.email@example.com" required />
+    
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" placeholder="Create a password" required minlength="6" />
+    
+    <label for="confirmPassword">Confirm Password</label>
+    <input type="password" id="confirmPassword" name="confirm_password" placeholder="Confirm your password" required minlength="6" />
+    
+    <button type="submit" class="submit-btn">Register</button>
+  </form>
+  <div class="switch-to-login" onclick="window.location.href='/login'">Already have an account? Login here</div>
+</div>
+
+<script>
+  // Simple password confirmation validation (optional)
+  const form = document.querySelector('form');
+  const password = document.getElementById('password');
+  const confirmPassword = document.getElementById('confirmPassword');
+
+  form.addEventListener('submit', (e) => {
+    if (password.value !== confirmPassword.value) {
+      e.preventDefault();
+      alert("Passwords do not match!");
+      confirmPassword.focus();
+    }
+  });
+</script>
+
+</body>
+</html>
