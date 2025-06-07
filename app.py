@@ -21,10 +21,10 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 # ---------- DATABASE CONFIG ----------
 db_config = {
-    'host': os.getenv('DB_HOST', 'dpg-d11vbh49c44c73foqnn0-a'),
-    'user': os.getenv('DB_USER', 'pothole_db_qx88_user'),
+    'host': os.getenv('DB_HOST', 'dpg-d128a8be5dus73f26o10-a'),
+    'user': os.getenv('DB_USER', 'pothole_db_rldm_user'),
     'password': os.getenv('DB_PASSWORD', ''),
-    'dbname': os.getenv('DB_NAME', 'pothole_db_qx88'),
+    'dbname': os.getenv('DB_NAME', 'pothole_db_rldm'),
     'port': int(os.getenv('DB_PORT', 5432)),
     'sslmode': 'require' 
 }
