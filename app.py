@@ -25,7 +25,8 @@ db_config = {
     'user': os.getenv('DB_USER', 'pothole_db_qx88_user'),
     'password': os.getenv('DB_PASSWORD', ''),
     'dbname': os.getenv('DB_NAME', 'pothole_db_qx88'),
-    'port': int(os.getenv('DB_PORT', 5432))
+    'port': int(os.getenv('DB_PORT', 5432)),
+    'sslmode': 'require' 
 }
 
 def get_db_connection():
