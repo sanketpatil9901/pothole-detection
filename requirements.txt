@@ -6,4 +6,4 @@ Werkzeug==2.3.7
 Pillow==9.5.0
 gunicorn==21.2.0
 imutils==0.5.4
-mysql==5.7
+pymysql==1.1.0
