@@ -205,9 +205,9 @@
                 <td>{{ p.longitude }}</td>
                 <td>{{ p.description }}</td>
                 <td>{{ p.details }}</td>
-                <td>
+               <td>
                     <div style="max-height:120px; overflow-y:auto;">
-                        {% if p.details_parsed and p.details_parsed is iterable and p.details_parsed is not string %}
+                        {% if p.details_parsed is iterable and p.details_parsed is not string %}
                         <ol style="padding-left: 18px; list-style-type: decimal;">
                             {% for d in p.details_parsed %}
                             {% if d is mapping %}
@@ -223,10 +223,11 @@
                             {% endfor %}
                         </ol>
                         {% else %}
-                        <span style="color:#888;">No details available</span>
+                        {{ p.details_parsed }}
                         {% endif %}
                     </div>
                 </td>
+
                 <td>{{ p.created_at if p.created_at else '' }}</td>
             </tr>
             {% endfor %}
