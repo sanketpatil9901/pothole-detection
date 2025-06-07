@@ -195,17 +195,19 @@
                 <th>Lon</th>
                 <th>Description</th>
                 <th>Details</th>
+                <th>Details</th>
                 <th>Date</th>
             </tr>
             {% for p in pothole_history %}
             <tr>
-                <td><img src="{{ p.image_path }}" width="60"></td>
+                <td><img src="{{ url_for('pothole_image', pothole_id=p.id) }}" width="60"></td>
                 <td>{{ p.latitude }} </td>
                 <td>{{ p.longitude }}</td>
                 <td>{{ p.description }}</td>
+                <td>{{ p.details }}</td>
                 <td>
                     <div style="max-height:120px; overflow-y:auto;">
-                        {% if p.details_parsed is iterable and p.details_parsed is not string %}
+                        {% if p.details_parsed and p.details_parsed is iterable and p.details_parsed is not string %}
                         <ol style="padding-left: 18px; list-style-type: decimal;">
                             {% for d in p.details_parsed %}
                             {% if d is mapping %}
@@ -221,7 +223,7 @@
                             {% endfor %}
                         </ol>
                         {% else %}
-                        {{ p.details_parsed }}
+                        <span style="color:#888;">No details available</span>
                         {% endif %}
                     </div>
                 </td>
