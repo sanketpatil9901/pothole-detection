@@ -105,9 +105,13 @@ def index():
         for p in pothole_history:
             try:
                 p['details_parsed'] = json.loads(p['details'])
+                if not isinstance(p['details_parsed'], list):
+                    p['details_parsed'] = [p['details_parsed']]
             except Exception:
                 try:
                     p['details_parsed'] = ast.literal_eval(p['details'])
+                    if not isinstance(p['details_parsed'], list):
+                        p['details_parsed'] = [p['details_parsed']]
                 except Exception:
                     p['details_parsed'] = []
         return render_template('admin_dashboard.html', pothole_history=pothole_history, users=users, complaints=complaints)
