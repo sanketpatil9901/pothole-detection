@@ -3,9 +3,10 @@
 
 <head>
     <title>Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-        <style>
+    <style>
         body {
             font-family: 'Inter', sans-serif;
             background: #f2f4f8;
@@ -145,7 +146,17 @@
             display: list-item;
         }
 
+        .preview img,
+        .preview video {
+            max-width: 100% !important;
+        }
+
         /* ----------- Responsive Styles ----------- */
+        @media screen and (max-width: 900px) {
+            .section {
+                max-width: 98vw;
+            }
+        }
         @media screen and (max-width: 768px) {
             h2 {
                 font-size: 20px;
@@ -156,6 +167,7 @@
                 flex-direction: column;
                 align-items: flex-start;
                 padding: 10px 15px;
+                gap: 0;
             }
 
             .nav a {
@@ -164,14 +176,20 @@
             }
 
             .section {
-                padding: 20px 15px;
-                margin: 20px 10px;
+                padding: 16px 5vw;
+                margin: 16px 0;
+                max-width: 100vw;
             }
 
             table {
                 display: block;
                 overflow-x: auto;
                 white-space: nowrap;
+                font-size: 13px;
+            }
+
+            th, td {
+                padding: 8px;
             }
 
             form input[type="submit"] {
@@ -180,12 +198,30 @@
 
             #map,
             #leafletMap {
-                height: 300px;
+                height: 250px !important;
+                min-height: 180px !important;
+                width: 100vw !important;
+                margin-left: -5vw;
+                border-radius: 0;
             }
 
             .preview img,
             .preview video {
                 max-width: 100% !important;
+            }
+        }
+        @media screen and (max-width: 480px) {
+            h2 {
+                font-size: 16px;
+                padding: 10px;
+            }
+            .section {
+                padding: 10px 2vw;
+            }
+            #map,
+            #leafletMap {
+                height: 180px !important;
+                min-height: 120px !important;
             }
         }
     </style>
@@ -394,7 +430,7 @@
             }).addTo(map);
 
             var potholes = [
-                // Example: {latitude: ..., longitude: ..., description: "...", image_path: "..."}
+                // Example: {latitude: ..., longitude: ..., description: "...", image_path: "...}
             ];
             potholes.forEach(function (p) {
                 L.marker([p.latitude, p.longitude]).addTo(map)
