@@ -5,7 +5,7 @@
     <title>Admin Dashboard</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
+        <style>
         body {
             font-family: 'Inter', sans-serif;
             background: #f2f4f8;
@@ -17,22 +17,22 @@
             background: #2c3e50;
             color: #fff;
             margin: 0;
-            padding: 20px 40px;
+            padding: 20px 20px;
             font-weight: 600;
             font-size: 24px;
         }
 
         .nav {
             background: #fff;
-            padding: 15px 40px;
+            padding: 15px 20px;
             border-bottom: 1px solid #ddd;
             display: flex;
             flex-wrap: wrap;
             align-items: center;
+            gap: 10px;
         }
 
         .nav a {
-            margin-right: 25px;
             text-decoration: none;
             color: #2c3e50;
             font-weight: 600;
@@ -51,13 +51,12 @@
 
         .section {
             display: none;
-            padding: 30px 40px;
+            padding: 30px 20px;
             background: #fff;
             margin: 30px auto;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             max-width: 1000px;
-            transition: all 0.3s ease;
         }
 
         .active {
@@ -103,10 +102,12 @@
             background-color: #2980b9;
         }
 
-        #map {
+        #map,
+        #leafletMap {
             height: 450px;
             border-radius: 10px;
             margin-top: 20px;
+            width: 100%;
         }
 
         table {
@@ -142,6 +143,50 @@
 
         ol>li {
             display: list-item;
+        }
+
+        /* ----------- Responsive Styles ----------- */
+        @media screen and (max-width: 768px) {
+            h2 {
+                font-size: 20px;
+                padding: 15px;
+            }
+
+            .nav {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 10px 15px;
+            }
+
+            .nav a {
+                margin: 5px 0;
+                font-size: 14px;
+            }
+
+            .section {
+                padding: 20px 15px;
+                margin: 20px 10px;
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            form input[type="submit"] {
+                width: 100%;
+            }
+
+            #map,
+            #leafletMap {
+                height: 300px;
+            }
+
+            .preview img,
+            .preview video {
+                max-width: 100% !important;
+            }
         }
     </style>
 </head>
