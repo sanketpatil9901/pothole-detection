@@ -226,7 +226,7 @@
           }
           data.forEach(p => {
             const marker = L.marker([p.latitude, p.longitude], { icon: potholeIcon })
-              .bindPopup(`<strong>${p.description}</strong><br/><img src="${p.image_path}" width="100"><br/><b>Distance:</b> ${p.distance_meters.toFixed(1)} m`);
+              .bindPopup(`<strong>${p.description}</strong><br/><img src="${p.image_url}" width="100"><br/><b>Distance:</b> ${p.distance_meters.toFixed(1)} m`);
             cluster.addLayer(marker);
 
             const polyline = L.polyline([userLatLng, [p.latitude, p.longitude]], {
@@ -245,7 +245,7 @@
 
             list.innerHTML += `
               <div class="pothole-item">
-                <img src="${p.image_path}" alt="Pothole Image">
+                <img src="${p.image_url}" alt="Pothole Image">
                 <div class="pothole-details">
                   <strong>${p.description}</strong><br/>
                   ${p.distance_meters.toFixed(1)} meters away
