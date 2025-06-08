@@ -141,9 +141,13 @@
         height: auto;
       }
       #map {
-        height: 300px !important;
-        min-height: 200px;
-        width: 100vw;
+        height: 350px !important;
+        min-height: 250px !important;
+        width: 100vw !important;
+        display: block;
+      }
+      #sidebar {
+        display: none;
       }
     }
   </style>
@@ -226,6 +230,7 @@
       map.setView(userLatLng, 15);
 
       L.marker(userLatLng).addTo(map).bindPopup("You are here").openPopup();
+      L.marker([userLatLng.lat + 0.001, userLatLng.lng + 0.001]).addTo(map).bindPopup("Test Marker").openPopup();
 
       fetch(`/api/potholes_nearby?lat=${userLatLng.lat}&lon=${userLatLng.lng}`)
         .then(res => res.json())
