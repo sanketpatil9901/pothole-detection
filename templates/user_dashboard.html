@@ -257,6 +257,7 @@
 
     function onLocationError(e) {
       document.getElementById('loading').innerText = "Location error: " + e.message;
+      alert("Location error: " + e.message + ". Make sure you allow location access and are using HTTPS.");
     }
 
     map.on('locationfound', onLocationFound);
