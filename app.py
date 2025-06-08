@@ -256,20 +256,16 @@ def upload_file():
             return redirect(url_for('index'))
         # Read image as binary
         image_data = file.read()
-        # You may still want to save the file to disk for processing
-        ext = file.filename.rsplit('.', 1)[1].lower()
-        unique_filename = f"{str(uuid.uuid4())}_{int(time.time())}.{ext}"
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-        with open(filepath, 'wb') as f:
-            f.write(image_data)
+        image_mime = file.mimetype
+
         count, details, output_path = imageDetector.detectPotholeonImage(filepath, (float(lat), float(lon)))
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO potholes (latitude, longitude, image, count, details, description)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """, (lat, lon, psycopg2.Binary(image_data), count, json.dumps(details), description))
+                INSERT INTO potholes (latitude, longitude, image, image_mime, count, details, description)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (lat, lon, psycopg2.Binary(image_data), image_mime, count, json.dumps(details), description))
             conn.commit()
             conn.close()
         except Exception as e:
