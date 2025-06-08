@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -17,64 +19,45 @@
             background: #2c3e50;
             color: #fff;
             margin: 0;
-            padding: 20px 40px;
+            padding: 20px;
             font-weight: 600;
             font-size: 24px;
+            text-align: center;
         }
 
         .nav {
             background: #fff;
-            padding: 15px 40px;
-            border-bottom: 1px solid #ddd;
+            padding: 10px 20px;
             display: flex;
             flex-wrap: wrap;
-            align-items: center;
+            justify-content: space-around;
+            border-bottom: 1px solid #ddd;
         }
 
         .nav a {
-            margin-right: 25px;
             text-decoration: none;
             color: #2c3e50;
             font-weight: 600;
             font-size: 16px;
-            transition: color 0.3s;
+            margin: 8px;
         }
 
         .nav a:hover {
             color: #3498db;
         }
 
-        .nav a:last-child {
-            margin-left: auto;
-            color: #e74c3c;
-        }
-
         .section {
             display: none;
-            padding: 30px 40px;
+            padding: 20px;
+            margin: 20px auto;
             background: #fff;
-            margin: 30px auto;
             border-radius: 12px;
+            max-width: 95%;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            max-width: 1000px;
-            transition: all 0.3s ease;
         }
 
         .active {
             display: block;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         form input[type="text"],
@@ -82,106 +65,119 @@
         form input[type="file"] {
             width: 100%;
             padding: 10px;
-            margin-top: 6px;
-            margin-bottom: 16px;
+            margin: 8px 0;
             border: 1px solid #ccc;
             border-radius: 8px;
-            box-sizing: border-box;
         }
 
         form input[type="submit"] {
             background-color: #3498db;
             color: white;
-            padding: 12px 20px;
+            padding: 10px 20px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
-            font-weight: bold;
         }
 
         form input[type="submit"]:hover {
             background-color: #2980b9;
         }
 
+        #leafletMap,
         #map {
-            height: 450px;
-            border-radius: 10px;
-            margin-top: 20px;
+            height: 400px;
+            border-radius: 8px;
+            margin-top: 15px;
         }
 
         table {
-            border-collapse: collapse;
             width: 100%;
+            border-collapse: collapse;
             margin-top: 20px;
-            background: #fff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
 
         th,
         td {
-            border: 1px solid #eee;
-            padding: 12px;
+            padding: 10px;
             text-align: left;
-            font-size: 15px;
+            border-bottom: 1px solid #ccc;
         }
 
         th {
-            background: #f9fafb;
-            font-weight: 600;
+            background: #ecf0f1;
         }
 
-        tr:hover {
-            background: #f1f7ff;
+        img,
+        video {
+            max-width: 100px;
         }
 
-        ol {
-            list-style-type: decimal !important;
-        }
+        @media (max-width: 768px) {
+            .nav {
+                flex-direction: column;
+                align-items: center;
+            }
 
-        ol>li {
-            display: list-item;
+            table,
+            thead,
+            tbody,
+            th,
+            td,
+            tr {
+                display: block;
+                width: 100%;
+            }
+
+            td {
+                text-align: right;
+                padding-left: 50%;
+                position: relative;
+            }
+
+            td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 10px;
+                text-align: left;
+                font-weight: bold;
+            }
         }
     </style>
 </head>
 
 <body>
-
     <h2>Admin Dashboard</h2>
-
     <div class="nav">
         <a href="#" onclick="showSection('upload')">Add Pothole</a>
         <a href="#" onclick="showSection('history')">Upload History</a>
         <a href="#" onclick="showSection('map')">Pothole Map</a>
         <a href="#" onclick="showSection('users')">All Users</a>
         <a href="#" onclick="showSection('complaints')">User Complaints</a>
-        <a href="/logout">Logout</a>
+        <a href="/logout" style="color:#e74c3c">Logout</a>
     </div>
 
     <div id="upload" class="section active">
         <h3>Add New Pothole</h3>
         <form action="/upload" method="POST" enctype="multipart/form-data" onsubmit="return handleSubmit()">
-            <label for="file">Upload Image or Video</label>
-            <input type="file" id="file" name="file" accept="image/*,video/*" required>
+            <label>Upload Image/Video</label>
+            <input type="file" name="file" id="file" accept="image/*,video/*" required>
 
-            <div class="preview" id="preview">
-                <img id="img-preview" style="display:none; max-width: 300px; margin-bottom: 10px;" />
-                <video id="video-preview" controls style="display:none; max-width: 300px;"></video>
+            <div class="preview">
+                <img id="img-preview" style="display:none;" />
+                <video id="video-preview" controls style="display:none;"></video>
             </div>
 
-            <label for="description">Pothole Description</label>
-            <textarea name="description" id="description" rows="3" required></textarea>
+            <label>Description</label>
+            <textarea name="description" required></textarea>
 
-            <label for="latitude">Latitude</label>
-            <input type="text" name="latitude" id="latitude" required readonly>
+            <label>Latitude</label>
+            <input type="text" id="latitude" name="latitude" readonly required>
+            <label>Longitude</label>
+            <input type="text" id="longitude" name="longitude" readonly required>
 
-            <label for="longitude">Longitude</label>
-            <input type="text" name="longitude" id="longitude" required readonly>
+            <div id="leafletMap"></div>
 
-            <div id="leafletMap" style="height: 350px; margin-top: 15px; border-radius: 10px;"></div>
-
-            <input type="submit" id="uploadBtn" value="Upload Pothole" style="margin-top: 4px;">
+            <input type="submit" id="uploadBtn" value="Upload Pothole">
             <div id="loading" style="display:none;">Uploading, please wait...</div>
         </form>
     </div>
@@ -189,46 +185,31 @@
     <div id="history" class="section">
         <h3>Upload History</h3>
         <table>
-            <tr>
-                <th>Image</th>
-                <th>Lat</th>
-                <th>Lon</th>
-                <th>Description</th>
-                <th>Details</th>
-                <th>Date</th>
-            </tr>
-            {% for p in pothole_history %}
-            <tr>
-                <td><img src="{{ url_for('pothole_image', pothole_id=p.id) }}" width="60"></td>
-                <td>{{ p.latitude }} </td>
-                <td>{{ p.longitude }}</td>
-                <td>{{ p.description }}</td>
-               <td>
-                    <div style="max-height:120px; overflow-y:auto;">
+            <thead>
+                <tr><th>Image</th><th>Lat</th><th>Lon</th><th>Description</th><th>Details</th><th>Date</th></tr>
+            </thead>
+            <tbody>
+                {% for p in pothole_history %}
+                <tr>
+                    <td data-label="Image"><img src="{{ url_for('pothole_image', pothole_id=p.id) }}"></td>
+                    <td data-label="Lat">{{ p.latitude }}</td>
+                    <td data-label="Lon">{{ p.longitude }}</td>
+                    <td data-label="Description">{{ p.description }}</td>
+                    <td data-label="Details">
                         {% if p.details is iterable and p.details is not string %}
-                        <ol style="padding-left: 18px; list-style-type: decimal;">
+                        <ol>
                             {% for d in p.details %}
                             {% if d is mapping %}
-                            <li>
-                                <b>Confidence:</b> {{ d.confidence }}<br>
-                                <b>Position:</b> {{ d.position }}<br>
-                                <b>Size:</b> {{ d.size }}<br>
-                                <b>GPS:</b> {{ d.gps }}
-                            </li>
-                            {% else %}
-                            <li>{{ d }}</li>
-                            {% endif %}
+                            <li><b>Confidence:</b> {{ d.confidence }}<br><b>Position:</b> {{ d.position }}<br><b>Size:</b> {{ d.size }}<br><b>GPS:</b> {{ d.gps }}</li>
+                            {% else %}<li>{{ d }}</li>{% endif %}
                             {% endfor %}
                         </ol>
-                        {% else %}
-                        {{ p.details }}
-                        {% endif %}
-                    </div>
-                </td>
-
-                <td>{{ p.created_at if p.created_at else '' }}</td>
-            </tr>
-            {% endfor %}
+                        {% else %}{{ p.details }}{% endif %}
+                    </td>
+                    <td data-label="Date">{{ p.created_at }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
         </table>
     </div>
 
@@ -240,73 +221,33 @@
     <div id="users" class="section">
         <h3>All Users</h3>
         <table>
-            <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Registered On</th>
-            </tr>
-            {% for u in users %}
-            <tr>
-                <td>{{ u.name }}</td>
-                <td>{{ u.email }}</td>
-                <td>{{ u.created_at }}</td>
-            </tr>
-            {% endfor %}
+            <thead>
+                <tr><th>Name</th><th>Email</th><th>Registered On</th></tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr><td data-label="Name">{{ u.name }}</td><td data-label="Email">{{ u.email }}</td><td data-label="Registered On">{{ u.created_at }}</td></tr>
+                {% endfor %}
+            </tbody>
         </table>
     </div>
 
     <div id="complaints" class="section">
         <h3>User Complaints</h3>
         <table>
-            <tr>
-                <th>User</th>
-                <th>Email</th>
-                <th>Complaint</th>
-                <th>Date</th>
-            </tr>
-            {% for c in complaints %}
-            <tr>
-                <td>{{ c.user_name }}</td>
-                <td>{{ c.user_email }}</td>
-                <td>{{ c.message }}</td>
-                <td>{{ c.created_at }}</td>
-            </tr>
-            {% endfor %}
+            <thead>
+                <tr><th>User</th><th>Email</th><th>Complaint</th><th>Date</th></tr>
+            </thead>
+            <tbody>
+                {% for c in complaints %}
+                <tr><td data-label="User">{{ c.user_name }}</td><td data-label="Email">{{ c.user_email }}</td><td data-label="Complaint">{{ c.message }}</td><td data-label="Date">{{ c.created_at }}</td></tr>
+                {% endfor %}
+            </tbody>
         </table>
     </div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        function initUploadMap() {
-            const map = L.map('leafletMap').setView([20.5937, 78.9629], 5);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 18,
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
-
-            let marker = L.marker([20.5937, 78.9629], { draggable: true }).addTo(map);
-            updateLatLngFields(marker.getLatLng());
-
-            marker.on('dragend', function (e) {
-                const latlng = marker.getLatLng();
-                updateLatLngFields(latlng);
-            });
-
-            map.on('click', function (e) {
-                marker.setLatLng(e.latlng);
-                updateLatLngFields(e.latlng);
-            });
-
-            function updateLatLngFields(latlng) {
-                document.getElementById('latitude').value = latlng.lat.toFixed(6);
-                document.getElementById('longitude').value = latlng.lng.toFixed(6);
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", function () {
-            initUploadMap();
-        });
-
         const fileInput = document.getElementById("file");
         const imgPreview = document.getElementById("img-preview");
         const videoPreview = document.getElementById("video-preview");
@@ -314,7 +255,6 @@
         fileInput.addEventListener("change", function () {
             const file = fileInput.files[0];
             if (!file) return;
-
             const url = URL.createObjectURL(file);
             if (file.type.startsWith("image/")) {
                 imgPreview.src = url;
@@ -339,25 +279,39 @@
             if (id === 'map') setTimeout(initMap, 100);
         }
 
-        function initMap() {
-            if (window._mapLoaded) return;
-            window._mapLoaded = true;
-            var map = L.map('map').setView([20.5937, 78.9629], 5);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
+        function initUploadMap() {
+            const map = L.map('leafletMap').setView([20.5937, 78.9629], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            let marker = L.marker([20.5937, 78.9629], { draggable: true }).addTo(map);
+            updateLatLng(marker.getLatLng());
+            map.on('click', function (e) {
+                marker.setLatLng(e.latlng);
+                updateLatLng(e.latlng);
+            });
+            marker.on('dragend', function () {
+                updateLatLng(marker.getLatLng());
+            });
+            function updateLatLng(latlng) {
+                document.getElementById("latitude").value = latlng.lat.toFixed(6);
+                document.getElementById("longitude").value = latlng.lng.toFixed(6);
+            }
+        }
 
-            var potholes = [
-                // Example: {latitude: ..., longitude: ..., description: "...", image_path: "..."}
-            ];
-            potholes.forEach(function (p) {
-                L.marker([p.latitude, p.longitude]).addTo(map)
-                    .bindPopup(`<b>${p.description}</b><br><img src="${p.image_path}" width="120">`);
+        function initMap() {
+            if (window._mapInitialized) return;
+            window._mapInitialized = true;
+            const map = L.map('map').setView([20.5937, 78.9629], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            const potholes = {{ potholes | tojson | safe }};
+            potholes.forEach(p => {
+                L.marker([p.latitude, p.longitude])
+                    .addTo(map)
+                    .bindPopup(`<b>${p.description}</b><br><img src="${p.image_path}" width="100">`);
             });
         }
-    </script>
 
+        document.addEventListener("DOMContentLoaded", initUploadMap);
+    </script>
 </body>
 
 </html>
