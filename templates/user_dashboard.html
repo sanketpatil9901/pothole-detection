@@ -134,6 +134,18 @@
     form button:hover {
       background: #0056b3;
     }
+
+    @media (max-width: 600px) {
+      #container {
+        display: block;
+        height: auto;
+      }
+      #map {
+        height: 300px !important;
+        min-height: 200px;
+        width: 100vw;
+      }
+    }
   </style>
 </head>
 <body>
@@ -252,6 +264,10 @@
                 </div>
               </div>`;
           });
+
+          if (cluster.getLayers().length > 0) {
+            map.fitBounds(cluster.getBounds(), {padding: [30, 30]});
+          }
         });
     }
 
