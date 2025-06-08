@@ -258,6 +258,13 @@ def upload_file():
         image_data = file.read()
         image_mime = file.mimetype
 
+        # Save the file to disk for processing
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        unique_filename = f"{str(uuid.uuid4())}_{int(time.time())}.{ext}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        with open(filepath, 'wb') as f:
+            f.write(image_data)
+
         count, details, output_path = imageDetector.detectPotholeonImage(filepath, (float(lat), float(lon)))
         try:
             conn = get_db_connection()
