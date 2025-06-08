@@ -196,6 +196,7 @@
                 <th>Description</th>
                 <th>Details</th>
                 <th>Details</th>
+                <th>Details</th>
                 <th>Date</th>
             </tr>
             {% for p in pothole_history %}
@@ -207,9 +208,9 @@
                 <td>{{ p.details }}</td>
                <td>
                     <div style="max-height:120px; overflow-y:auto;">
-                        {% if p.details_parsed is iterable and p.details_parsed is not string %}
+                        {% if p.details is iterable and p.details is not string %}
                         <ol style="padding-left: 18px; list-style-type: decimal;">
-                            {% for d in p.details_parsed %}
+                            {% for d in p.details %}
                             {% if d is mapping %}
                             <li>
                                 <b>Confidence:</b> {{ d.confidence }}<br>
@@ -223,7 +224,7 @@
                             {% endfor %}
                         </ol>
                         {% else %}
-                        {{ p.details_parsed }}
+                        {{ p.details }}
                         {% endif %}
                     </div>
                 </td>
