@@ -312,11 +312,12 @@ def submit_complaint():
 def pothole_image(pothole_id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT image FROM potholes WHERE id = %s", (pothole_id,))
+    cursor.execute("SELECT image, image_mime FROM potholes WHERE id = %s", (pothole_id,))
     row = cursor.fetchone()
     conn.close()
-    if row and row[0]:
-        return app.response_class(row[0], mimetype='image/jpeg')
+    if row and row.get('image'):
+        mimetype = row.get('image_mime') or 'image/jpeg'
+        return app.response_class(row['image'], mimetype=mimetype)
     else:
         return '', 404
 
