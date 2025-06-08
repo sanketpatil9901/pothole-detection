@@ -107,7 +107,7 @@ def index():
                 p['details_parsed'] = json.loads(p['details'])
             except Exception:
                 try:
-                    p['details_parsed'] = ast.literal_eval(p['details'])                   
+                    p['details_parsed'] = ast.literal_eval(p['details'])
                 except Exception:
                     p['details_parsed'] = []
         return render_template('admin_dashboard.html', pothole_history=pothole_history, users=users, complaints=complaints)
@@ -149,7 +149,7 @@ def potholes_nearby():
             result.append({
                 'latitude': p['latitude'],
                 'longitude': p['longitude'],
-                'image_path': p['image_path'],
+                'image_url': url_for('pothole_image', pothole_id=p['id']),
                 'description': f"Pothole (confidence: {p.get('count', 1)})",
                 'distance_meters': distance
             })
