@@ -272,19 +272,30 @@
         <table>
             <tr>
                 <th>Image</th>
+                <th>Detected</th>
                 <th>Lat</th>
                 <th>Lon</th>
                 <th>Description</th>
                 <th>Details</th>
                 <th>Date</th>
+                <th>Action</th>
             </tr>
             {% for p in pothole_history %}
             <tr>
-                <td><img src="{{ url_for('pothole_image', pothole_id=p.id) }}" width="60"></td>
+                <td>
+                    <img src="{{ url_for('pothole_image', pothole_id=p.id) }}" width="60">
+                </td>
+                <td>
+                    {% if p.detected_image_path %}
+                        <img src="{{ p.detected_image_path }}" width="60">
+                    {% else %}
+                        <span style="color:#aaa;">N/A</span>
+                    {% endif %}
+                </td>
                 <td>{{ p.latitude }} </td>
                 <td>{{ p.longitude }}</td>
                 <td>{{ p.description }}</td>
-               <td>
+                <td>
                     <div style="max-height:120px; overflow-y:auto;">
                         {% if p.details is iterable and p.details is not string %}
                         <ol style="padding-left: 18px; list-style-type: decimal;">
@@ -306,8 +317,14 @@
                         {% endif %}
                     </div>
                 </td>
-
                 <td>{{ p.created_at if p.created_at else '' }}</td>
+                <td>
+                    {% if p.detected_image_path %}
+                    <button onclick="showDetectedModal('{{ p.detected_image_path }}')">View Detected</button>
+                    {% else %}
+                    <button disabled style="opacity:0.5;">No Detection</button>
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </table>
@@ -354,6 +371,14 @@
             </tr>
             {% endfor %}
         </table>
+    </div>
+
+    <!-- Modal for Detected Image -->
+    <div id="detectedModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.7); align-items:center; justify-content:center;">
+        <div style="background:#fff; padding:20px; border-radius:10px; max-width:90vw; max-height:90vh; position:relative;">
+            <span onclick="closeDetectedModal()" style="position:absolute; top:10px; right:20px; font-size:28px; cursor:pointer;">&times;</span>
+            <img id="detectedModalImg" src="" style="max-width:80vw; max-height:80vh; display:block; margin:auto;">
+        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -436,6 +461,15 @@
                 L.marker([p.latitude, p.longitude]).addTo(map)
                     .bindPopup(`<b>${p.description}</b><br><img src="${p.image_path}" width="120">`);
             });
+        }
+
+        function showDetectedModal(imgPath) {
+            document.getElementById('detectedModalImg').src = imgPath;
+            document.getElementById('detectedModal').style.display = 'flex';
+        }
+        function closeDetectedModal() {
+            document.getElementById('detectedModal').style.display = 'none';
+            document.getElementById('detectedModalImg').src = '';
         }
     </script>
 
