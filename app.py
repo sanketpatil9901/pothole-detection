@@ -16,9 +16,9 @@ from cloudinary.utils import cloudinary_url
 
 
 cloudinary.config( 
-    cloud_name = "dendgw7eq", 
-    api_key = "316668832349432", 
-    api_secret = "2lzVjRFvUs0S2sZgTEXljb3iioU", # Click 'View API Keys' above to copy your API secret
+    cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    api_key = os.environ.get("CLOUDINARY_API_KEY"),
+    api_secret = os.environ.get("CLOUDINARY_API_SECRET"),
     secure=True
 )
 
