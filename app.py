@@ -265,14 +265,22 @@ def upload_file():
         with open(filepath, 'wb') as f:
             f.write(image_data)
 
+        # Run detection and get output path (detected image with boxes)
         count, details, output_path = imageDetector.detectPotholeonImage(filepath, (float(lat), float(lon)))
+
+        # Save detected image path relative to static for web access
+        detected_rel_path = None
+        if output_path and os.path.exists(output_path):
+            detected_rel_path = os.path.relpath(output_path, 'static')
+            detected_rel_path = '/static/' + detected_rel_path.replace("\\", "/")
+
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO potholes (latitude, longitude, image, image_mime, count, details, description)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (lat, lon, psycopg2.Binary(image_data), image_mime, count, json.dumps(details), description))
+                INSERT INTO potholes (latitude, longitude, image, image_mime, count, details, description, detected_image_path)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (lat, lon, psycopg2.Binary(image_data), image_mime, count, json.dumps(details), description, detected_rel_path))
             conn.commit()
             conn.close()
         except Exception as e:
