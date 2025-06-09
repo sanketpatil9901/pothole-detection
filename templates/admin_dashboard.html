@@ -282,7 +282,7 @@
             {% for p in pothole_history %}
             <tr>
                 <td>
-                    <img src="{{ url_for('pothole_image', pothole_id=p.id) }}" width="60">
+                     <img src="{{ p.image_path }}" width="60">
                 </td>
                 <td>{{ p.latitude }} </td>
                 <td>{{ p.longitude }}</td>
@@ -310,9 +310,6 @@
                     </div>
                 </td>
                 <td>{{ p.created_at if p.created_at else '' }}</td>
-                <td>
-                    <img src="{{ p.image_path }}" width="60">
-                </td>
                 <td>
                     {% if p.detected_image_path %}
                         <button onclick="showDetectedModal('{{ p.detected_image_path }}')">View Detected</button>
