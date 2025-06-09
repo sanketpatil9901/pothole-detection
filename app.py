@@ -10,6 +10,17 @@ import psycopg2
 import psycopg2.extras
 from datetime import timedelta
 import imageDetector
+import cloudinary
+import cloudinary.uploader
+from cloudinary.utils import cloudinary_url
+
+
+cloudinary.config( 
+    cloud_name = "dendgw7eq", 
+    api_key = "316668832349432", 
+    api_secret = "2lzVjRFvUs0S2sZgTEXljb3iioU", # Click 'View API Keys' above to copy your API secret
+    secure=True
+)
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -254,46 +265,52 @@ def upload_file():
         if not lat or not lon:
             flash('Please select a location on the map.', 'error')
             return redirect(url_for('index'))
-        # Read image as binary
-        image_data = file.read()
-        image_mime = file.mimetype
 
-        # Save the file to disk for processing
-        ext = file.filename.rsplit('.', 1)[1].lower()
-        unique_filename = f"{str(uuid.uuid4())}_{int(time.time())}.{ext}"
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-        with open(filepath, 'wb') as f:
-            f.write(image_data)
+        # Upload original image to Cloudinary
+        upload_result = cloudinary.uploader.upload(file)
+        public_id = upload_result["public_id"]
+        image_url = upload_result["secure_url"]
+
+        # Optional: Get optimized and cropped URLs
+        optimize_url, _ = cloudinary_url(public_id, fetch_format="auto", quality="auto")
+        auto_crop_url, _ = cloudinary_url(public_id, width=500, height=500, crop="auto", gravity="auto")
+
+        # Download the image locally for processing (if needed)
+        import requests
+        temp_filename = f"/tmp/{uuid.uuid4()}.jpg"
+        with open(temp_filename, 'wb') as f:
+            f.write(requests.get(image_url).content)
 
         # Run detection and get output path (detected image with boxes)
-        count, details, output_path = imageDetector.detectPotholeonImage(filepath, (float(lat), float(lon)))
+        count, details, output_path = imageDetector.detectPotholeonImage(temp_filename, (float(lat), float(lon)))
 
-        # Save detected image path relative to static for web access
-        detected_image_data = None
-        detected_image_mime = None
+        # Upload detected image to Cloudinary
+        detected_image_url = None
+        detected_public_id = None
+        detected_optimize_url = None
+        detected_auto_crop_url = None
         if output_path and os.path.exists(output_path):
-            with open(output_path, 'rb') as f:
-                detected_image_data = f.read()
-            # Guess mime type from extension
-            ext = os.path.splitext(output_path)[1].lower()
-            if ext in ['.jpg', '.jpeg']:
-                detected_image_mime = 'image/jpeg'
-            elif ext == '.png':
-                detected_image_mime = 'image/png'
-            else:
-                detected_image_mime = 'application/octet-stream'
+            detected_upload = cloudinary.uploader.upload(output_path)
+            detected_public_id = detected_upload["public_id"]
+            detected_image_url = detected_upload["secure_url"]
+            detected_optimize_url, _ = cloudinary_url(detected_public_id, fetch_format="auto", quality="auto")
+            detected_auto_crop_url, _ = cloudinary_url(detected_public_id, width=500, height=500, crop="auto", gravity="auto")
 
+        # Clean up temp files
+        os.remove(temp_filename)
+        if output_path and os.path.exists(output_path):
+            os.remove(output_path)
+
+        # Save URLs in your database (not the image data)
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO potholes (latitude, longitude, image, image_mime, count, details, description, detected_image, detected_image_mime)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO potholes (latitude, longitude, image_path, count, details, description, detected_image_path)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
             """, (
-                lat, lon, psycopg2.Binary(image_data), image_mime, count,
-                json.dumps(details), description,
-                psycopg2.Binary(detected_image_data) if detected_image_data else None,
-                detected_image_mime
+                lat, lon, optimize_url, count,
+                json.dumps(details), description, detected_optimize_url
             ))
             conn.commit()
             conn.close()
