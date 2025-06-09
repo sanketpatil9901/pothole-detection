@@ -311,6 +311,9 @@
                 </td>
                 <td>{{ p.created_at if p.created_at else '' }}</td>
                 <td>
+                    <img src="{{ p.image_path }}" width="60">
+                </td>
+                <td>
                     {% if p.detected_image_path %}
                         <button onclick="showDetectedModal('{{ p.detected_image_path }}')">View Detected</button>
                     {% else %}
