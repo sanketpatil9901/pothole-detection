@@ -85,7 +85,7 @@
     attribution: '© OpenStreetMap'
   }).addTo(map);
 
-  let userLatLng = null; // to hold user location
+  let userLatLng = null;
 
   function speak(text) {
     if ('speechSynthesis' in window) {
@@ -94,14 +94,32 @@
     }
   }
 
-  function drawPolyline(from, to) {
-    L.polyline([from, to], { color: 'blue', weight: 2, dashArray: '5, 5' }).addTo(map);
+  function drawPolylineWithDistance(from, to, distance) {
+    const line = L.polyline([from, to], {
+      color: 'blue',
+      weight: 2,
+      dashArray: '5, 5'
+    }).addTo(map);
+
+    const midLat = (from.lat + to[0]) / 2;
+    const midLng = (from.lng + to[1]) / 2;
+
+    L.marker([midLat, midLng], {
+      icon: L.divIcon({
+        className: 'distance-label',
+        html: `<div style="background:#fff;border:1px solid #000;padding:2px 6px;border-radius:4px;font-size:12px;">${distance.toFixed(1)}m</div>`,
+        iconSize: [60, 20],
+        iconAnchor: [30, 10]
+      })
+    }).addTo(map);
   }
 
   function onLocationFound(e) {
     userLatLng = e.latlng;
     document.getElementById('loading').style.display = 'none';
     map.setView(userLatLng, 15);
+
+    // Show user's location
     L.marker(userLatLng).addTo(map).bindPopup("You are here").openPopup();
 
     fetch(`/api/potholes_nearby?lat=${userLatLng.lat}&lon=${userLatLng.lng}`)
@@ -117,12 +135,13 @@
         data.forEach(p => {
           const potholeLatLng = [p.latitude, p.longitude];
 
-          const marker = L.marker(potholeLatLng, {
-            icon: L.icon({
-              iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-              iconSize: [30, 30]
-            })
-          }).bindPopup(`
+          const potholeIcon = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+            iconSize: [30, 30],
+            iconAnchor: [15, 30]
+          });
+
+          const marker = L.marker(potholeLatLng, { icon: potholeIcon }).bindPopup(`
             <strong>${p.description}</strong><br/>
             <img src="${p.image_url}" width="100"><br/>
             <b>Distance:</b> ${p.distance_meters.toFixed(1)} m
@@ -130,10 +149,9 @@
 
           cluster.addLayer(marker);
 
-          // Draw line from user to pothole
-          drawPolyline(userLatLng, potholeLatLng);
+          drawPolylineWithDistance(userLatLng, potholeLatLng, p.distance_meters);
 
-          // Add to side list
+          // Add to right panel list
           list.innerHTML += `
             <div class="pothole-item">
               <img src="${p.image_url}">
@@ -145,7 +163,7 @@
         });
 
         map.addLayer(cluster);
-        setTimeout(() => map.invalidateSize(), 200); // fix map re-render
+        setTimeout(() => map.invalidateSize(), 200);
       });
   }
 
