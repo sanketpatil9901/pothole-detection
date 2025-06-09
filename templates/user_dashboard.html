@@ -7,6 +7,10 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
+  <!-- Leaflet Fullscreen Plugin -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.css" />
+<script src="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.js"></script>
+
   <style>
     html, body { height: 100%; margin: 0; font-family: 'Segoe UI', sans-serif; background: #f9fafb; }
     .navbar { display: flex; justify-content: space-between; align-items: center; background: #1f2d3d; padding: 16px; color: #fff; position: sticky; top: 0; z-index: 1000; }
@@ -25,6 +29,11 @@
     form input, form textarea, form button { width:100%; padding:10px; margin-bottom:12px; font-size:14px; border-radius:6px; }
     form button { background:#007bff; color:#fff; border:none; cursor:pointer; transition:background .2s ease; }
     form button:hover { background:#0056b3; }
+    /* Make fullscreen map take full screen properly */
+.leaflet-container:fullscreen {
+  width: 100% !important;
+  height: 100% !important;
+}
     @media screen and (max-width:768px) {
       #container { grid-template-columns:1fr; height:auto; }
       #map { height:300px; }
@@ -76,7 +85,7 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 <script>
-  const map = L.map('map', { tap: false });
+  const map = L.map('map', { tap: false , fullscreenControl: true});
   const cluster = L.markerClusterGroup();
   map.addLayer(cluster);
 
