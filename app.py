@@ -268,72 +268,70 @@ def upload_file():
         # Run detection and get output path (detected image with boxes)
         count, details, output_path = imageDetector.detectPotholeonImage(filepath, (float(lat), float(lon)))
 
-        # Save detected image path relative to static for web access
-        detected_rel_path = None
+        # Read detected image as binary
+        detected_image_data = None
+        detected_image_mime = None
         if output_path and os.path.exists(output_path):
-            detected_rel_path = os.path.relpath(output_path, 'static')
-            detected_rel_path = '/static/' + detected_rel_path.replace("\\", "/")
+            with open(output_path, 'rb') as f:
+                detected_image_data = f.read()
+            # Guess mime type from extension
+            ext = os.path.splitext(output_path)[1].lower()
+            if ext in ['.jpg', '.jpeg']:
+                detected_image_mime = 'image/jpeg'
+            elif ext == '.png':
+                detected_image_mime = 'image/png'
+            else:
+                detected_image_mime = 'application/octet-stream'
 
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO potholes (latitude, longitude, image, image_mime, count, details, description, detected_image_path)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """, (lat, lon, psycopg2.Binary(image_data), image_mime, count, json.dumps(details), description, detected_rel_path))
+                INSERT INTO potholes (latitude, longitude, image, count, details, description)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id;
+            """, (lat, lon, image_data, count, json.dumps(details), description))
+            pothole_id = cursor.fetchone().get('id')
             conn.commit()
-            conn.close()
-        except Exception as e:
-            flash("Database error: " + str(e), 'error')
-            return redirect(url_for('index'))
-        flash('Pothole uploaded successfully!', 'success')
-        return redirect(url_for('index'))
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM potholes ORDER BY id DESC")
-    pothole_history = cursor.fetchall()
-    conn.close()
-    return render_template('admin_dashboard.html', pothole_history=pothole_history)
 
-@app.route('/submit_complaint', methods=['POST'])
-def submit_complaint():
-    if not session.get('user_logged_in'):
-        return redirect(url_for('login'))
-    name = request.form.get('name')
-    email = request.form.get('email')
-    message = request.form.get('message')
-    if not name or not email or not message:
-        flash('All fields are required.', 'error')
-        return redirect(url_for('user_dashboard'))
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO complaints (user_name, user_email, message)
-            VALUES (%s, %s, %s)
-        """, (name, email, message))
-        conn.commit()
-        conn.close()
-        flash('Complaint submitted successfully!', 'success')
-    except Exception as e:
-        flash('Error submitting complaint: ' + str(e), 'error')
-    return redirect(url_for('user_dashboard'))
+            # Update the detected image in the same transaction
+            if detected_image_data is not None:
+                cursor.execute("""
+                    UPDATE potholes
+                    SET detected_image = %s, detected_image_mime = %s
+                    WHERE id = %s;
+                """, (detected_image_data, detected_image_mime, pothole_id))
+
+            conn.commit()
+            flash('Pothole uploaded and detected successfully.', 'success')
+            return redirect(url_for('index'))
+        except Exception as e:
+            conn.rollback()
+            flash("Error uploading pothole: " + str(e), 'error')
+            return redirect(url_for('index'))
+    return render_template('upload.html')
 
 @app.route('/pothole_image/<int:pothole_id>')
 def pothole_image(pothole_id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT image, image_mime FROM potholes WHERE id = %s", (pothole_id,))
+    cursor.execute("SELECT image FROM potholes WHERE id = %s", (pothole_id,))
     row = cursor.fetchone()
     conn.close()
     if row and row.get('image'):
-        mimetype = row.get('image_mime') or 'image/jpeg'
-        return app.response_class(row['image'], mimetype=mimetype)
+        return app.response_class(row['image'], mimetype='image/jpeg')
     else:
         return '', 404
 
-if __name__ == '__main__':
-    init_db()
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+@app.route('/detected_image/<int:pothole_id>')
+def detected_image(pothole_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT detected_image, detected_image_mime FROM potholes WHERE id = %s", (pothole_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row and row.get('detected_image'):
+        mimetype = row.get('detected_image_mime') or 'image/jpeg'
+        return app.response_class(row['detected_image'], mimetype=mimetype)
+    else:
+        return '', 404
