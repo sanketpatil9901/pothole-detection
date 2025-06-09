@@ -376,28 +376,44 @@
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
         function initUploadMap() {
-            const map = L.map('leafletMap').setView([20.5937, 78.9629], 5);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 18,
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
+            // Try to get user's current location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function (position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    createUploadMap(lat, lng);
+                }, function () {
+                    // If denied or failed, fallback to India center
+                    createUploadMap(20.5937, 78.9629);
+                });
+            } else {
+                createUploadMap(20.5937, 78.9629);
+            }
 
-            let marker = L.marker([20.5937, 78.9629], { draggable: true }).addTo(map);
-            updateLatLngFields(marker.getLatLng());
+            function createUploadMap(lat, lng) {
+                const map = L.map('leafletMap').setView([lat, lng], 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 18,
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
 
-            marker.on('dragend', function (e) {
-                const latlng = marker.getLatLng();
-                updateLatLngFields(latlng);
-            });
+                let marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+                updateLatLngFields(marker.getLatLng());
 
-            map.on('click', function (e) {
-                marker.setLatLng(e.latlng);
-                updateLatLngFields(e.latlng);
-            });
+                marker.on('dragend', function (e) {
+                    const latlng = marker.getLatLng();
+                    updateLatLngFields(latlng);
+                });
 
-            function updateLatLngFields(latlng) {
-                document.getElementById('latitude').value = latlng.lat.toFixed(6);
-                document.getElementById('longitude').value = latlng.lng.toFixed(6);
+                map.on('click', function (e) {
+                    marker.setLatLng(e.latlng);
+                    updateLatLngFields(e.latlng);
+                });
+
+                function updateLatLngFields(latlng) {
+                    document.getElementById('latitude').value = latlng.lat.toFixed(6);
+                    document.getElementById('longitude').value = latlng.lng.toFixed(6);
+                }
             }
         }
 
