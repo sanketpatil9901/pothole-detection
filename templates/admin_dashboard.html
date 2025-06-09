@@ -286,11 +286,11 @@
                     <img src="{{ url_for('pothole_image', pothole_id=p.id) }}" width="60">
                 </td>
                 <td>
-                    {% if p.detected_image_path %}
-                        <img src="{{ p.detected_image_path }}" width="60">
-                    {% else %}
-                        <span style="color:#aaa;">N/A</span>
-                    {% endif %}
+                    {% if p.id %}
+        <img src="{{ url_for('detected_image', pothole_id=p.id) }}" width="60">
+    {% else %}
+        <span style="color:#aaa;">N/A</span>
+    {% endif %}
                 </td>
                 <td>{{ p.latitude }} </td>
                 <td>{{ p.longitude }}</td>
