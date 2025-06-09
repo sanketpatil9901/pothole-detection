@@ -311,11 +311,10 @@
                 </td>
                 <td>{{ p.created_at if p.created_at else '' }}</td>
                 <td>
-                    {% if p.detected_image %}
-                    {% set url = url_for("detected_image", pothole_id=p.id) %}
-                    <button onclick="showDetectedModal('{{ url }}')">View Detected</button>
+                    {% if p.detected_image_path %}
+                        <button onclick="showDetectedModal('{{ p.detected_image_path }}')">View Detected</button>
                     {% else %}
-                    <button disabled style="opacity:0.5;">No Detection</button>
+                        <button disabled style="opacity:0.5;">No Detection</button>
                     {% endif %}
                 </td>
             </tr>
@@ -461,7 +460,7 @@
                     latitude: {{ p.latitude }},
                     longitude: {{ p.longitude }},
                     description: `{{ p.description|e }}`,
-                    image_path: "{{ url_for('pothole_image', pothole_id=p.id) }}"
+                    image_path: "{{ p.image_path }}"
                 }{% if not loop.last %},{% endif %}
                 {% endfor %}
             ];
