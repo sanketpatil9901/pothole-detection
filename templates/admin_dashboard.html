@@ -464,7 +464,7 @@
         }
 
         function showDetectedModal(imgPath) {
-            document.getElementById('detectedModalImg').src = imgPath;
+            document.getElementById('detectedModalImg').src = url_for('imgPath', pothole_id=p.id) ;
             document.getElementById('detectedModal').style.display = 'flex';
         }
         function closeDetectedModal() {
