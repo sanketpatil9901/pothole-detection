@@ -85,122 +85,119 @@
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
-  <script src="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.js"></script>
-  <script>
-const map = L.map('map', { tap: false });
-const cluster = L.markerClusterGroup();
-map.addLayer(cluster);
+<script>
+const map = L.map('map', { tap: false, fullscreenControl: true });
+  const cluster = L.markerClusterGroup();
+  map.addLayer(cluster);
 
-// Add fullscreen control to the map
-map.addControl(new L.Control.Fullscreen());
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 18,
-  attribution: '© OpenStreetMap'
-}).addTo(map);
+  let userLatLng = null;
 
-let userLatLng = null;
-
-function speak(text) {
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+  function speak(text) {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+    }
   }
-}
 
-function drawPolylineWithDistance(from, to, distance) {
-  const line = L.polyline([from, to], {
-    color: 'blue',
-    weight: 2,
-    dashArray: '5, 5'
-  }).addTo(map);
+  function drawPolylineWithDistance(from, to, distance) {
+    const line = L.polyline([from, to], {
+      color: 'blue',
+      weight: 2,
+      dashArray: '5, 5'
+    }).addTo(map);
 
-  const midLat = (from.lat + to[0]) / 2;
-  const midLng = (from.lng + to[1]) / 2;
+    const midLat = (from.lat + to[0]) / 2;
+    const midLng = (from.lng + to[1]) / 2;
 
-  L.marker([midLat, midLng], {
-    icon: L.divIcon({
-      className: 'distance-label',
-      html: `<div style="background:#fff;border:1px solid #000;padding:2px 6px;border-radius:4px;font-size:12px;">${distance.toFixed(1)}m</div>`,
-      iconSize: [60, 20],
-      iconAnchor: [30, 10]
-    })
-  }).addTo(map);
-}
+    L.marker([midLat, midLng], {
+      icon: L.divIcon({
+        className: 'distance-label',
+        html: `<div style="background:#fff;border:1px solid #000;padding:2px 6px;border-radius:4px;font-size:12px;">${distance.toFixed(1)}m</div>`,
+        iconSize: [60, 20],
+        iconAnchor: [30, 10]
+      })
+    }).addTo(map);
+  }
 
-function onLocationFound(e) {
-  userLatLng = e.latlng;
-  document.getElementById('loading').style.display = 'none';
-  map.setView(userLatLng, 15);
+  function onLocationFound(e) {
+    userLatLng = e.latlng;
+    document.getElementById('loading').style.display = 'none';
+    map.setView(userLatLng, 15);
 
-  // Show user's location
-  L.marker(userLatLng).addTo(map).bindPopup("You are here").openPopup();
+    // Show user's location
+    L.marker(userLatLng).addTo(map).bindPopup("You are here").openPopup();
 
-  fetch(`/api/potholes_nearby?lat=${userLatLng.lat}&lon=${userLatLng.lng}`)
-    .then(res => res.json())
-    .then(data => {
-      const list = document.getElementById('pothole-list');
-      list.innerHTML = '';
+    fetch(`/api/potholes_nearby?lat=${userLatLng.lat}&lon=${userLatLng.lng}`)
+      .then(res => res.json())
+      .then(data => {
+        const list = document.getElementById('pothole-list');
+        list.innerHTML = '';
 
-      if (data.length > 0) {
-        speak(`Warning! ${data.length} pothole${data.length > 1 ? 's are' : ' is'} nearby.`);
-      }
+        if (data.length > 0) {
+          speak(`Warning! ${data.length} pothole${data.length > 1 ? 's are' : ' is'} nearby.`);
+        }
 
-      data.forEach(p => {
-        const potholeLatLng = [p.latitude, p.longitude];
+        data.forEach(p => {
+          const potholeLatLng = [p.latitude, p.longitude];
 
-        const potholeIcon = L.icon({
-          iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-          iconSize: [30, 30],
-          iconAnchor: [15, 30]
+          const potholeIcon = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+            iconSize: [30, 30],
+            iconAnchor: [15, 30]
+          });
+
+          const marker = L.marker(potholeLatLng, { icon: potholeIcon }).bindPopup(`
+            <strong>${p.description}</strong><br/>
+            <img src="${p.image_url}" width="100"><br/>
+            <b>Distance:</b> ${p.distance_meters.toFixed(1)} m
+          `);
+
+          cluster.addLayer(marker);
+
+          drawPolylineWithDistance(userLatLng, potholeLatLng, p.distance_meters);
+
+          // Add to right panel list
+          list.innerHTML += `
+            <div class="pothole-item">
+              <img src="${p.image_url}">
+              <div class="pothole-details">
+                <strong>${p.description}</strong><br>
+                ${p.distance_meters.toFixed(1)}m away
+              </div>
+            </div>`;
         });
 
-        const marker = L.marker(potholeLatLng, { icon: potholeIcon }).bindPopup(`
-          <strong>${p.description}</strong><br/>
-          <img src="${p.image_url}" width="100"><br/>
-          <b>Distance:</b> ${p.distance_meters.toFixed(1)} m
-        `);
-
-        cluster.addLayer(marker);
-
-        drawPolylineWithDistance(userLatLng, potholeLatLng, p.distance_meters);
-
-        // Add to right panel list
-        list.innerHTML += `
-          <div class="pothole-item">
-            <img src="${p.image_url}">
-            <div class="pothole-details">
-              <strong>${p.description}</strong><br>
-              ${p.distance_meters.toFixed(1)}m away
-            </div>
-          </div>`;
+        map.addLayer(cluster);
+        setTimeout(() => map.invalidateSize(), 200);
       });
+  }
 
-      map.addLayer(cluster);
-      setTimeout(() => map.invalidateSize(), 200);
-    });
-}
+  function onLocationError(e) {
+    document.getElementById('loading').innerText = `Location error: ${e.message}`;
+  }
 
-function onLocationError(e) {
-  document.getElementById('loading').innerText = `Location error: ${e.message}`;
-}
+  map.on('locationfound', onLocationFound);
+  map.on('locationerror', onLocationError);
+  map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true, timeout: 10000 });
 
-map.on('locationfound', onLocationFound);
-map.on('locationerror', onLocationError);
-map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true, timeout: 10000 });
+  function scrollToSection(id) {
+    document.querySelectorAll('.section-content').forEach(el => el.classList.remove('active'));
+    const target = document.getElementById(id);
+    if (target) target.classList.add('active');
+  }
 
-function scrollToSection(id) {
-  document.querySelectorAll('.section-content').forEach(el => el.classList.remove('active'));
-  const target = document.getElementById(id);
-  if (target) target.classList.add('active');
-}
-
-window.onload = () => {
-  scrollToSection('profile');
-  document.getElementById('complainant-name').value = document.getElementById('user-name').textContent;
-  document.getElementById('complainant-email').value = document.getElementById('user-email').textContent;
-};
-  </script>
+  window.onload = () => {
+    scrollToSection('profile');
+    document.getElementById('complainant-name').value = document.getElementById('user-name').textContent;
+    document.getElementById('complainant-email').value = document.getElementById('user-email').textContent;
+  };
+</script>
+<script src="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.js"></script>
 
 </body>
 </html>
