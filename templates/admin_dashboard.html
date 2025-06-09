@@ -447,13 +447,36 @@
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
 
+            // Use a custom pothole icon
+            var potholeIcon = L.icon({
+                iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+                iconSize: [32, 32],
+                iconAnchor: [16, 32]
+            });
+
+            // Pass pothole data from Flask to JS
             var potholes = [
-                // Example: {latitude: ..., longitude: ..., description: "...", image_path: "...}
+                {% for p in pothole_history %}
+                {
+                    latitude: {{ p.latitude }},
+                    longitude: {{ p.longitude }},
+                    description: `{{ p.description|e }}`,
+                    image_path: "{{ url_for('pothole_image', pothole_id=p.id) }}"
+                }{% if not loop.last %},{% endif %}
+                {% endfor %}
             ];
+
             potholes.forEach(function (p) {
-                L.marker([p.latitude, p.longitude]).addTo(map)
+                L.marker([p.latitude, p.longitude], {icon: potholeIcon}).addTo(map)
                     .bindPopup(`<b>${p.description}</b><br><img src="${p.image_path}" width="120">`);
             });
+
+            if (potholes.length > 0) {
+                var group = new L.featureGroup(potholes.map(function(p) {
+                    return L.marker([p.latitude, p.longitude]);
+                }));
+                map.fitBounds(group.getBounds().pad(0.2));
+            }
         }
 
         function showDetectedModal(imgPath) {
