@@ -160,7 +160,7 @@ def potholes_nearby():
             result.append({
                 'latitude': p['latitude'],
                 'longitude': p['longitude'],
-                'image_url': url_for('pothole_image', pothole_id=p['id']),
+                'image_url': p['image_path'],
                 'description': f"Pothole (confidence: {p.get('count', 1)})",
                 'distance_meters': distance
             })
@@ -271,9 +271,8 @@ def upload_file():
         public_id = upload_result["public_id"]
         image_url = upload_result["secure_url"]
 
-        # Optional: Get optimized and cropped URLs
+        # Optional: Get optimized URL
         optimize_url, _ = cloudinary_url(public_id, fetch_format="auto", quality="auto")
-        auto_crop_url, _ = cloudinary_url(public_id, width=500, height=500, crop="auto", gravity="auto")
 
         # Download the image locally for processing (if needed)
         import requests
@@ -285,16 +284,11 @@ def upload_file():
         count, details, output_path = imageDetector.detectPotholeonImage(temp_filename, (float(lat), float(lon)))
 
         # Upload detected image to Cloudinary
-        detected_image_url = None
-        detected_public_id = None
         detected_optimize_url = None
-        detected_auto_crop_url = None
         if output_path and os.path.exists(output_path):
             detected_upload = cloudinary.uploader.upload(output_path)
             detected_public_id = detected_upload["public_id"]
-            detected_image_url = detected_upload["secure_url"]
             detected_optimize_url, _ = cloudinary_url(detected_public_id, fetch_format="auto", quality="auto")
-            detected_auto_crop_url, _ = cloudinary_url(detected_public_id, width=500, height=500, crop="auto", gravity="auto")
 
         # Clean up temp files
         os.remove(temp_filename)
