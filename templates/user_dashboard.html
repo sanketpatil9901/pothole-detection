@@ -252,115 +252,132 @@
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
-  <script>
-    const map = L.map('map');
-    const cluster = L.markerClusterGroup();
-    map.addLayer(cluster);
+ <!-- All your existing <head> remains unchanged -->
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+<script>
+  const map = L.map('map');
+  const cluster = L.markerClusterGroup();
+  map.addLayer(cluster);
 
-    const potholeIcon = L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-      iconSize: [30, 30]
-    });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
 
-    function speak(text) {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.rate = 1;
-        window.speechSynthesis.speak(utter);
-      }
+  const potholeIcon = L.icon({
+    iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+    iconSize: [30, 30]
+  });
+
+  function speak(text) {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.rate = 1;
+      window.speechSynthesis.speak(utter);
     }
+  }
 
-    function onLocationFound(e) {
-      document.getElementById('loading').style.display = 'none';
-      const userLatLng = e.latlng;
-      map.setView(userLatLng, 15);
-      L.marker(userLatLng).addTo(map).bindPopup("You are here").openPopup();
+  function onLocationFound(e) {
+    document.getElementById('loading').style.display = 'none';
+    const userLatLng = e.latlng;
+    map.setView(userLatLng, 15);
+    L.marker(userLatLng).addTo(map).bindPopup("You are here").openPopup();
 
-      setTimeout(() => {
-        fetch(`/api/potholes_nearby?lat=${userLatLng.lat}&lon=${userLatLng.lng}`)
-          .then(res => res.json())
-          .then(data => {
-            const list = document.getElementById('pothole-list');
-            list.innerHTML = '';
-            if (data.length > 0) {
-              speak(`Warning! ${data.length} pothole${data.length > 1 ? 's are' : ' is'} nearby.`);
-              notifyUser(`Warning! ${data.length} pothole${data.length > 1 ? 's are' : ' is'} nearby.`);
-            }
-            data.forEach(p => {
-              const marker = L.marker([p.latitude, p.longitude], { icon: potholeIcon })
-                .bindPopup(`<strong>${p.description}</strong><br/><img src="${p.image_url}" width="100"><br/><b>Distance:</b> ${p.distance_meters.toFixed(1)} m`);
-              cluster.addLayer(marker);
+    setTimeout(() => {
+      fetch(`/api/potholes_nearby?lat=${userLatLng.lat}&lon=${userLatLng.lng}`)
+        .then(res => res.json())
+        .then(data => {
+          console.log("Fetched pothole data:", data); // Debug log
+          const list = document.getElementById('pothole-list');
+          list.innerHTML = '';
 
-              const polyline = L.polyline([userLatLng, [p.latitude, p.longitude]], {
-                color: '#ff4d4f', weight: 3, dashArray: '6, 6'
-              }).addTo(map);
+          if (data.length > 0) {
+            speak(`Warning! ${data.length} pothole${data.length > 1 ? 's are' : ' is'} nearby.`);
+            notifyUser(`Warning! ${data.length} pothole${data.length > 1 ? 's are' : ' is'} nearby.`);
+          }
 
-              const midLat = (userLatLng.lat + p.latitude) / 2;
-              const midLng = (userLatLng.lng + p.longitude) / 2;
-              L.marker([midLat, midLng], {
-                icon: L.divIcon({
-                  className: '',
-                  html: `<div style="background: #007bff; color: white; padding: 4px 12px; border-radius: 14px; font-size: 13px; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">${p.distance_meters.toFixed(1)} m</div>`,
-                  iconSize: [80, 24], iconAnchor: [40, 12]
-                })
-              }).addTo(map);
+          data.forEach(p => {
+            const marker = L.marker([p.latitude, p.longitude], { icon: potholeIcon })
+              .bindPopup(`<strong>${p.description}</strong><br/><img src="${p.image_url}" width="100"><br/><b>Distance:</b> ${p.distance_meters.toFixed(1)} m`);
+            cluster.addLayer(marker);
 
-              list.innerHTML += `
-                <div class="pothole-item">
-                  <img src="${p.image_url}" alt="Pothole Image">
-                  <div class="pothole-details">
-                    <strong>${p.description}</strong><br/>
-                    ${p.distance_meters.toFixed(1)} meters away
-                  </div>
-                </div>`;
-            });
+            const polyline = L.polyline([userLatLng, [p.latitude, p.longitude]], {
+              color: '#ff4d4f', weight: 3, dashArray: '6, 6'
+            }).addTo(map);
 
-            cluster.refreshClusters();
+            const midLat = (userLatLng.lat + p.latitude) / 2;
+            const midLng = (userLatLng.lng + p.longitude) / 2;
+            L.marker([midLat, midLng], {
+              icon: L.divIcon({
+                className: '',
+                html: `<div style="background: #007bff; color: white; padding: 4px 12px; border-radius: 14px; font-size: 13px; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">${p.distance_meters.toFixed(1)} m</div>`,
+                iconSize: [80, 24], iconAnchor: [40, 12]
+              })
+            }).addTo(map);
 
-            if (cluster.getLayers().length > 0) {
-              map.fitBounds(cluster.getBounds(), { padding: [30, 30] });
-            }
+            list.innerHTML += `
+              <div class="pothole-item">
+                <img src="${p.image_url}" alt="Pothole Image">
+                <div class="pothole-details">
+                  <strong>${p.description}</strong><br/>
+                  ${p.distance_meters.toFixed(1)} meters away
+                </div>
+              </div>`;
           });
-      }, 500);
+
+          cluster.refreshClusters();
+
+          if (cluster.getLayers().length > 0) {
+            map.fitBounds(cluster.getBounds(), { padding: [30, 30] });
+          }
+
+          // ✅ Ensure potholes section is visible
+          document.getElementById('potholes').classList.add('active');
+
+          // ✅ Scroll to pothole section automatically
+          scrollToSection('potholes');
+
+          // ✅ Fix mobile map visibility
+          setTimeout(() => {
+            map.invalidateSize();
+          }, 300);
+        });
+    }, 500);
+  }
+
+  function onLocationError(e) {
+    document.getElementById('loading').innerText = "Location error: " + e.message;
+    alert("Location error: " + e.message + ". Make sure you allow location access and are using HTTPS.");
+  }
+
+  map.on('locationfound', onLocationFound);
+  map.on('locationerror', onLocationError);
+  map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true, timeout: 10000 });
+
+  function scrollToSection(id) {
+    const sections = document.querySelectorAll(".section-content");
+    sections.forEach(sec => sec.classList.remove("active"));
+    const target = document.getElementById(id);
+    if (target) target.classList.add("active");
+  }
+
+  if ('Notification' in window && Notification.permission !== 'granted') {
+    Notification.requestPermission();
+  }
+
+  function notifyUser(message) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Pothole Alert', { body: message });
     }
+  }
 
-    function onLocationError(e) {
-      document.getElementById('loading').innerText = "Location error: " + e.message;
-      alert("Location error: " + e.message + ". Make sure you allow location access and are using HTTPS.");
-    }
+  window.onload = () => {
+    document.getElementById("complainant-name").value = document.getElementById("user-name").textContent;
+    document.getElementById("complainant-email").value = document.getElementById("user-email").textContent;
+    scrollToSection('potholes'); // ✅ Set initial section to potholes
+  };
+</script>
 
-    map.on('locationfound', onLocationFound);
-    map.on('locationerror', onLocationError);
-    map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true, timeout: 10000 });
-
-    function scrollToSection(id) {
-      const sections = document.querySelectorAll(".section-content");
-      sections.forEach(sec => sec.classList.remove("active"));
-      const target = document.getElementById(id);
-      if (target) target.classList.add("active");
-    }
-
-    if ('Notification' in window && Notification.permission !== 'granted') {
-      Notification.requestPermission();
-    }
-
-    function notifyUser(message) {
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('Pothole Alert', { body: message });
-      }
-    }
-
-    window.onload = () => {
-      document.getElementById("complainant-name").value = document.getElementById("user-name").textContent;
-      document.getElementById("complainant-email").value = document.getElementById("user-email").textContent;
-      scrollToSection('profile');
-    };
-  </script>
 </body>
 </html>
